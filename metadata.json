@@ -1,0 +1,6 @@
+{
+  "name": "Meeting Prep Agent",
+  "description": "AI-powered meeting preparation assistant with isolated long-term memory per contact powered by Hindsight Cloud and Groq LLM.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

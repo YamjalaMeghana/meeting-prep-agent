@@ -1,0 +1,901 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Meeting Prep Agent</title>
+  <meta name="description" content="AI-powered meeting preparation assistant with isolated long-term memory per contact powered by Hindsight Cloud and Groq LLM." />
+  <meta property="og:title" content="Meeting Prep Agent" />
+  <meta property="og:description" content="AI-powered meeting preparation assistant with isolated long-term memory per contact powered by Hindsight Cloud and Groq LLM." />
+  <meta property="og:type" content="website" />
+  <meta name="twitter:card" content="summary_large_image" />
+
+  <!-- Tailwind CSS CDN for instant, pristine utility styling -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+    /* Subtle custom scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #f1f5f9;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 3px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-900 min-h-screen flex flex-col">
+
+  <!-- Navigation / Header -->
+  <header class="bg-white border-b border-slate-200 sticky top-0 z-30">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <div class="flex items-center space-x-3">
+        <div class="w-9 h-9 rounded-lg bg-blue-600 flex items-center justify-center text-white font-bold text-lg shadow-sm">
+          M
+        </div>
+        <div>
+          <h1 class="text-base font-semibold text-slate-900 leading-tight">Meeting Prep Agent</h1>
+          <p class="text-xs text-slate-500">Long-term Memory via Hindsight Cloud &bull; Groq LLM</p>
+        </div>
+      </div>
+
+      <div class="flex items-center space-x-3 text-xs">
+        <div id="system-badge" class="hidden sm:flex items-center space-x-2 bg-slate-100 text-slate-700 px-3 py-1.5 rounded-full border border-slate-200">
+          <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+          <span id="system-status-text">Backend Active</span>
+        </div>
+        <button 
+          id="btn-open-add-modal"
+          class="inline-flex items-center space-x-1.5 bg-blue-600 hover:bg-blue-700 text-white font-medium px-3.5 py-1.5 rounded-lg text-xs transition shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+          <span>Add Contact</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Error / Alert Banner -->
+  <div id="alert-banner" class="hidden bg-amber-50 border-b border-amber-200 px-4 py-2.5 text-xs text-amber-800 transition">
+    <div class="max-w-7xl mx-auto flex items-center justify-between">
+      <div class="flex items-center space-x-2">
+        <svg class="w-4 h-4 text-amber-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+        <span id="alert-message">Notice message</span>
+      </div>
+      <button onclick="dismissAlert()" class="text-amber-600 hover:text-amber-800 font-bold ml-4">✕</button>
+    </div>
+  </div>
+
+  <!-- Main Content Layout -->
+  <main class="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1 flex flex-col md:flex-row gap-6">
+    
+    <!-- LEFT SIDEBAR: Contact List -->
+    <aside class="w-full md:w-80 shrink-0 flex flex-col gap-4">
+      <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-4 flex flex-col h-full max-h-[calc(100vh-140px)]">
+        
+        <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+          <div>
+            <h2 class="text-sm font-semibold text-slate-800">Contacts</h2>
+            <p class="text-xs text-slate-500">Each contact has an isolated memory bank</p>
+          </div>
+          <span id="contacts-count-badge" class="bg-slate-100 text-slate-600 text-xs px-2 py-0.5 rounded-full font-medium">0</span>
+        </div>
+
+        <!-- Search contacts -->
+        <div class="mt-3 relative">
+          <input 
+            type="text" 
+            id="contact-search-input"
+            placeholder="Search contacts..." 
+            class="w-full pl-8 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:bg-white transition"
+          />
+          <svg class="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+        </div>
+
+        <!-- Contact list container -->
+        <div id="contact-list" class="mt-3 space-y-1.5 overflow-y-auto flex-1 pr-0.5">
+          <!-- Populated by JavaScript -->
+          <div class="p-6 text-center text-xs text-slate-400">
+            Loading contacts...
+          </div>
+        </div>
+
+        <!-- Bottom add quick button -->
+        <div class="pt-3 border-t border-slate-100 mt-auto">
+          <button 
+            id="btn-quick-add"
+            class="w-full py-2 px-3 border border-dashed border-slate-300 rounded-lg text-xs text-slate-600 hover:text-blue-600 hover:border-blue-400 hover:bg-blue-50/50 flex items-center justify-center space-x-1.5 transition">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+            <span>Add New Contact</span>
+          </button>
+        </div>
+
+      </div>
+    </aside>
+
+    <!-- RIGHT PANEL: Selected Contact Profile & Workflows -->
+    <section class="flex-1 flex flex-col min-w-0">
+      
+      <!-- Empty State: When no contact is selected -->
+      <div id="empty-state" class="bg-white rounded-xl border border-slate-200 shadow-sm p-12 text-center my-auto">
+        <div class="w-12 h-12 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+        </div>
+        <h3 class="text-base font-semibold text-slate-800">Select or Add a Contact</h3>
+        <p class="text-xs text-slate-500 mt-1 max-w-sm mx-auto">
+          Choose a contact from the left sidebar to prepare for upcoming meetings, debrief past discussions, and query grounded memory.
+        </p>
+        <button 
+          onclick="openAddModal()" 
+          class="mt-4 inline-flex items-center space-x-1.5 bg-blue-600 hover:bg-blue-700 text-white font-medium px-4 py-2 rounded-lg text-xs transition shadow-sm">
+          <span>+ Add First Contact</span>
+        </button>
+      </div>
+
+      <!-- Active Contact View -->
+      <div id="contact-view" class="hidden flex flex-col gap-6">
+
+        <!-- CONTACT HEADER CARD -->
+        <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div class="flex items-center space-x-4">
+            <div id="profile-avatar" class="w-12 h-12 rounded-xl bg-blue-600 text-white flex items-center justify-center font-bold text-lg shrink-0 shadow-sm">
+              R
+            </div>
+            <div>
+              <div class="flex items-center space-x-2">
+                <h2 id="profile-name" class="text-lg font-bold text-slate-900 leading-tight">Rahul</h2>
+                <span id="profile-bank-badge" class="bg-slate-100 text-slate-600 text-[11px] px-2 py-0.5 rounded font-mono border border-slate-200">contact-rahul-001</span>
+              </div>
+              <p id="profile-subtitle" class="text-xs text-slate-500 mt-0.5">Account Manager &bull; Example Corp</p>
+            </div>
+          </div>
+          
+          <div class="flex items-center space-x-2">
+            <button 
+              id="btn-refresh-data" 
+              onclick="refreshCurrentContact()" 
+              title="Refresh memories and insights"
+              class="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition text-xs flex items-center space-x-1 border border-slate-200">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+              <span class="hidden sm:inline">Refresh</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- 1. BEFORE YOU CONTINUE: Proactive Preparation Insight Banner -->
+        <div class="bg-gradient-to-r from-blue-50/70 to-indigo-50/70 rounded-xl border border-blue-200/80 p-4 shadow-sm">
+          <div class="flex items-start space-x-3">
+            <div class="w-7 h-7 rounded-lg bg-blue-600 text-white flex items-center justify-center shrink-0 mt-0.5 shadow-sm">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            </div>
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center justify-between">
+                <span class="text-[11px] font-bold tracking-wider uppercase text-blue-900">BEFORE YOU CONTINUE</span>
+                <span class="text-[10px] bg-blue-100 text-blue-800 px-2 py-0.5 rounded font-medium">AI preparation insight</span>
+              </div>
+              <div id="proactive-insight-content" class="mt-1.5 text-xs text-slate-800 leading-relaxed font-medium">
+                <span class="text-slate-400 italic">Analyzing memory bank for upcoming interaction...</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 2. DEBRIEF THIS MEETING CARD -->
+        <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
+          <div class="flex items-center justify-between mb-2">
+            <div>
+              <h3 class="text-xs font-bold tracking-wider uppercase text-slate-800">DEBRIEF THIS MEETING</h3>
+              <p class="text-xs text-slate-500 mt-0.5">Dump your notes in free text. Groq extracts facts and stores them directly into this contact's isolated Hindsight bank.</p>
+            </div>
+          </div>
+
+          <div class="mt-3">
+            <textarea 
+              id="debrief-input"
+              rows="3"
+              placeholder="e.g. Just wrapped up with Rahul. He wants the roadmap doc by Friday, he's price-sensitive, and he prefers short bullet-point emails over long ones."
+              class="w-full p-3 bg-slate-50 border border-slate-200 rounded-lg text-xs leading-relaxed placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition"
+            ></textarea>
+          </div>
+
+          <div class="mt-3 flex items-center justify-between">
+            <span class="text-[11px] text-slate-400">Stores only factual commitments, follow-ups, concerns & preferences.</span>
+            <button 
+              id="btn-remember-meeting"
+              onclick="handleRememberMeeting()"
+              class="inline-flex items-center space-x-1.5 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 text-white font-medium px-4 py-2 rounded-lg text-xs transition shadow-sm focus:outline-none">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path></svg>
+              <span id="btn-remember-label">Remember This Meeting</span>
+            </button>
+          </div>
+
+          <!-- 3. AI REMEMBERED (Newly Extracted Facts) -->
+          <div id="ai-remembered-container" class="hidden mt-4 pt-4 border-t border-slate-100">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-xs font-bold tracking-wider uppercase text-emerald-800 flex items-center space-x-1.5">
+                <svg class="w-3.5 h-3.5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                <span>AI REMEMBERED</span>
+              </span>
+              <span class="text-[10px] text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">Newly extracted & retained in Hindsight</span>
+            </div>
+            <ul id="ai-remembered-list" class="space-y-1.5 pl-2 text-xs text-slate-700">
+              <!-- Rendered dynamically -->
+            </ul>
+          </div>
+        </div>
+
+        <!-- 4. CONTACT MEMORY CARD (Retrieved from Hindsight Cloud) -->
+        <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
+          <div class="flex items-center justify-between mb-3">
+            <div>
+              <h3 class="text-xs font-bold tracking-wider uppercase text-slate-800">CONTACT MEMORY</h3>
+              <p class="text-xs text-slate-500 mt-0.5">Memories retrieved live from Hindsight Cloud (<span id="memory-bank-tag" class="font-mono text-slate-600">contact-rahul-001</span>)</p>
+            </div>
+            <span id="stored-memories-count" class="bg-slate-100 text-slate-600 text-xs px-2 py-0.5 rounded-full font-medium">0 memories</span>
+          </div>
+
+          <div id="contact-memory-list" class="space-y-2 max-h-60 overflow-y-auto pr-1">
+            <div class="text-xs text-slate-400 italic py-3 text-center">
+              No memories stored for this contact yet. Debrief a meeting above to start remembering.
+            </div>
+          </div>
+        </div>
+
+        <!-- 5. ASK ABOUT THIS CONTACT CARD -->
+        <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
+          <div class="mb-3">
+            <h3 id="ask-section-title" class="text-xs font-bold tracking-wider uppercase text-slate-800">
+              WHAT SHOULD I DISCUSS WITH THIS CONTACT TODAY?
+            </h3>
+            <p class="text-xs text-slate-500 mt-0.5">Answers are strictly grounded ONLY in this contact's Hindsight memories. If not in memory, it will respond "Not in memory."</p>
+          </div>
+
+          <div class="flex gap-2">
+            <input 
+              type="text" 
+              id="ask-input"
+              placeholder="e.g. What should I discuss with Rahul today? Or what's his budget?"
+              class="flex-1 p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-xs placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition"
+              onkeydown="if(event.key === 'Enter') handleAskQuestion();"
+            />
+            <button 
+              id="btn-ask"
+              onclick="handleAskQuestion()"
+              class="bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 text-white font-medium px-4 py-2.5 rounded-lg text-xs transition shadow-sm shrink-0">
+              <span id="btn-ask-label">Ask</span>
+            </button>
+          </div>
+
+          <!-- Answer & Memories Used Display -->
+          <div id="ask-result-container" class="hidden mt-4 pt-4 border-t border-slate-100 flex flex-col gap-3">
+            <div class="bg-slate-50 rounded-lg p-3.5 border border-slate-200">
+              <div class="text-[11px] font-semibold text-slate-500 uppercase tracking-wide">Answer</div>
+              <div id="ask-answer-text" class="text-xs text-slate-900 font-medium mt-1 leading-relaxed">
+                <!-- Answer here -->
+              </div>
+            </div>
+
+            <!-- Memories Used transparency block -->
+            <div class="bg-slate-50/50 rounded-lg p-3 border border-slate-200/80">
+              <div class="text-[11px] font-semibold text-slate-500 uppercase tracking-wide flex items-center justify-between">
+                <span>Memories Used</span>
+                <span class="text-[10px] text-slate-400 font-normal">Hindsight recall transparency</span>
+              </div>
+              <ul id="memories-used-list" class="mt-2 space-y-1 text-xs text-slate-700">
+                <!-- Populated dynamically -->
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <!-- 6. PREPARE FOR NEXT MEETING CARD -->
+        <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+            <div>
+              <h3 class="text-xs font-bold tracking-wider uppercase text-slate-800">PREPARE FOR NEXT MEETING</h3>
+              <p class="text-xs text-slate-500 mt-0.5">Synthesizes historical commitments and feedback to advise on what to follow up on or do differently.</p>
+            </div>
+            <button 
+              id="btn-prepare-meeting"
+              onclick="handlePrepareNextMeeting()"
+              class="inline-flex items-center space-x-1.5 bg-slate-900 hover:bg-slate-800 disabled:bg-slate-300 text-white font-medium px-4 py-2 rounded-lg text-xs transition shadow-sm shrink-0">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg>
+              <span id="btn-prepare-label">Prepare for Next Meeting</span>
+            </button>
+          </div>
+
+          <!-- Prepare Results (Remembered Facts vs AI Suggestion) -->
+          <div id="prepare-result-container" class="hidden flex flex-col gap-4 pt-3 border-t border-slate-100">
+            <!-- Remembered facts -->
+            <div class="bg-slate-50 rounded-lg p-3.5 border border-slate-200">
+              <span class="text-[11px] font-bold tracking-wider uppercase text-slate-600 block mb-2">REMEMBERED FACTS</span>
+              <ul id="prepare-facts-list" class="space-y-1 pl-2 text-xs text-slate-700">
+                <!-- Dynamically populated -->
+              </ul>
+            </div>
+
+            <!-- AI Suggestion -->
+            <div class="bg-blue-50/60 rounded-lg p-3.5 border border-blue-200">
+              <span class="text-[11px] font-bold tracking-wider uppercase text-blue-900 block mb-1">AI SUGGESTION</span>
+              <p id="prepare-suggestion-text" class="text-xs text-slate-800 leading-relaxed">
+                <!-- Suggestion here -->
+              </p>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ADD CONTACT MODAL -->
+  <div id="add-contact-modal" class="hidden fixed inset-0 z-50 overflow-y-auto bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-md w-full border border-slate-200 shadow-xl p-6 relative">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+        <div>
+          <h3 class="text-sm font-semibold text-slate-900">Add New Contact</h3>
+          <p class="text-xs text-slate-500 mt-0.5">Creates an isolated Hindsight memory bank for this person</p>
+        </div>
+        <button onclick="closeAddModal()" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg">✕</button>
+      </div>
+
+      <form id="add-contact-form" onsubmit="handleAddContact(event)" class="mt-4 space-y-3.5">
+        <div>
+          <label class="block text-xs font-medium text-slate-700 mb-1">Name <span class="text-red-500">*</span></label>
+          <input 
+            type="text" 
+            id="input-contact-name" 
+            required 
+            placeholder="e.g. Rahul"
+            class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-xs placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition"
+          />
+        </div>
+
+        <div>
+          <label class="block text-xs font-medium text-slate-700 mb-1">Role</label>
+          <input 
+            type="text" 
+            id="input-contact-role" 
+            placeholder="e.g. Account Manager"
+            class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-xs placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition"
+          />
+        </div>
+
+        <div>
+          <label class="block text-xs font-medium text-slate-700 mb-1">Company</label>
+          <input 
+            type="text" 
+            id="input-contact-company" 
+            placeholder="e.g. Example Corp"
+            class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-xs placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition"
+          />
+        </div>
+
+        <div class="pt-2 flex items-center justify-end space-x-2">
+          <button 
+            type="button" 
+            onclick="closeAddModal()"
+            class="px-4 py-2 border border-slate-200 rounded-lg text-xs text-slate-600 hover:bg-slate-100 transition">
+            Cancel
+          </button>
+          <button 
+            type="submit" 
+            id="btn-submit-contact"
+            class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-medium transition shadow-sm">
+            <span>Create Contact & Memory Bank</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- APPLICATION LOGIC IN VANILLA JAVASCRIPT -->
+  <script>
+    // State
+    let contacts = [];
+    let selectedContactId = null;
+    let selectedContact = null;
+
+    // DOM Elements
+    const contactListEl = document.getElementById('contact-list');
+    const contactsCountBadge = document.getElementById('contacts-count-badge');
+    const contactSearchInput = document.getElementById('contact-search-input');
+    const emptyStateEl = document.getElementById('empty-state');
+    const contactViewEl = document.getElementById('contact-view');
+    
+    // Header & Profile elements
+    const profileAvatar = document.getElementById('profile-avatar');
+    const profileName = document.getElementById('profile-name');
+    const profileSubtitle = document.getElementById('profile-subtitle');
+    const profileBankBadge = document.getElementById('profile-bank-badge');
+    const memoryBankTag = document.getElementById('memory-bank-tag');
+    
+    // Section elements
+    const proactiveInsightContent = document.getElementById('proactive-insight-content');
+    const debriefInput = document.getElementById('debrief-input');
+    const btnRememberMeeting = document.getElementById('btn-remember-meeting');
+    const btnRememberLabel = document.getElementById('btn-remember-label');
+    const aiRememberedContainer = document.getElementById('ai-remembered-container');
+    const aiRememberedList = document.getElementById('ai-remembered-list');
+    const contactMemoryList = document.getElementById('contact-memory-list');
+    const storedMemoriesCount = document.getElementById('stored-memories-count');
+    
+    // Ask elements
+    const askSectionTitle = document.getElementById('ask-section-title');
+    const askInput = document.getElementById('ask-input');
+    const btnAsk = document.getElementById('btn-ask');
+    const btnAskLabel = document.getElementById('btn-ask-label');
+    const askResultContainer = document.getElementById('ask-result-container');
+    const askAnswerText = document.getElementById('ask-answer-text');
+    const memoriesUsedList = document.getElementById('memories-used-list');
+
+    // Prepare elements
+    const btnPrepareMeeting = document.getElementById('btn-prepare-meeting');
+    const btnPrepareLabel = document.getElementById('btn-prepare-label');
+    const prepareResultContainer = document.getElementById('prepare-result-container');
+    const prepareFactsList = document.getElementById('prepare-facts-list');
+    const prepareSuggestionText = document.getElementById('prepare-suggestion-text');
+
+    // Modal elements
+    const addContactModal = document.getElementById('add-contact-modal');
+    const addContactForm = document.getElementById('add-contact-form');
+    const alertBanner = document.getElementById('alert-banner');
+    const alertMessage = document.getElementById('alert-message');
+
+    // Helpers
+    function showAlert(msg, isError = true) {
+      alertMessage.textContent = msg;
+      alertBanner.className = isError 
+        ? "bg-red-50 border-b border-red-200 px-4 py-2.5 text-xs text-red-800 transition" 
+        : "bg-blue-50 border-b border-blue-200 px-4 py-2.5 text-xs text-blue-800 transition";
+      alertBanner.classList.remove('hidden');
+    }
+
+    function dismissAlert() {
+      alertBanner.classList.add('hidden');
+    }
+
+    function openAddModal() {
+      addContactForm.reset();
+      addContactModal.classList.remove('hidden');
+      document.getElementById('input-contact-name').focus();
+    }
+
+    function closeAddModal() {
+      addContactModal.classList.add('hidden');
+    }
+
+    document.getElementById('btn-open-add-modal').addEventListener('click', openAddModal);
+    document.getElementById('btn-quick-add').addEventListener('click', openAddModal);
+
+    // Initial load
+    async function init() {
+      await checkHealth();
+      await fetchContacts();
+    }
+
+    async function checkHealth() {
+      try {
+        const res = await fetch('/api/health');
+        if (res.ok) {
+          const data = await res.json();
+          const badgeText = document.getElementById('system-status-text');
+          if (!data.hindsight_configured || !data.groq_configured) {
+            showAlert("Server Notice: Backend cloud services are currently offline or unconfigured on the server.", false);
+            badgeText.textContent = "API Keys Needed in .env";
+          } else {
+            badgeText.textContent = `Hindsight & Groq (${data.groq_model || 'gpt-oss-120b'})`;
+          }
+        }
+      } catch (err) {
+        console.error("Health check error:", err);
+      }
+    }
+
+    // Fetch and render contacts
+    async function fetchContacts() {
+      try {
+        const res = await fetch('/api/contacts');
+        if (!res.ok) throw new Error("Failed to load contacts");
+        const data = await res.json();
+        contacts = data.contacts || [];
+        contactsCountBadge.textContent = contacts.length;
+        renderContactList();
+
+        // If previously selected contact still exists, keep selected; else select first or clear
+        if (selectedContactId && contacts.some(c => c.id === selectedContactId)) {
+          selectContact(selectedContactId);
+        } else if (contacts.length > 0 && !selectedContactId) {
+          selectContact(contacts[0].id);
+        } else if (contacts.length === 0) {
+          emptyStateEl.classList.remove('hidden');
+          contactViewEl.classList.add('hidden');
+          selectedContactId = null;
+          selectedContact = null;
+        }
+      } catch (err) {
+        showAlert(err.message);
+      }
+    }
+
+    function renderContactList() {
+      const query = (contactSearchInput.value || '').trim().toLowerCase();
+      const filtered = contacts.filter(c => 
+        c.name.toLowerCase().includes(query) || 
+        (c.role || '').toLowerCase().includes(query) || 
+        (c.company || '').toLowerCase().includes(query)
+      );
+
+      if (filtered.length === 0) {
+        contactListEl.innerHTML = `
+          <div class="p-6 text-center text-xs text-slate-400">
+            ${contacts.length === 0 ? "No contacts yet." : "No matching contacts found."}
+          </div>
+        `;
+        return;
+      }
+
+      contactListEl.innerHTML = filtered.map(c => {
+        const isSelected = c.id === selectedContactId;
+        const initial = (c.name || 'C').charAt(0).toUpperCase();
+        return `
+          <div 
+            onclick="selectContact('${c.id}')"
+            class="cursor-pointer p-2.5 rounded-lg transition border flex items-center justify-between ${
+              isSelected 
+                ? 'bg-blue-50/80 border-blue-200 text-blue-900 font-medium' 
+                : 'bg-white hover:bg-slate-50 border-slate-100 text-slate-700'
+            }">
+            <div class="flex items-center space-x-2.5 min-w-0">
+              <div class="w-8 h-8 rounded-lg ${isSelected ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600'} flex items-center justify-center text-xs font-bold shrink-0">
+                ${initial}
+              </div>
+              <div class="min-w-0">
+                <div class="text-xs truncate font-medium text-slate-900">${escapeHtml(c.name)}</div>
+                <div class="text-[11px] truncate text-slate-400">${escapeHtml(c.role || c.company || 'Contact')}</div>
+              </div>
+            </div>
+            <span class="text-[10px] font-mono text-slate-400 bg-slate-50 px-1.5 py-0.5 rounded border border-slate-100 ml-2 shrink-0">
+              ${escapeHtml(c.bank_id)}
+            </span>
+          </div>
+        `;
+      }).join('');
+    }
+
+    contactSearchInput.addEventListener('input', renderContactList);
+
+    // Add contact form submission
+    async function handleAddContact(e) {
+      e.preventDefault();
+      const btn = document.getElementById('btn-submit-contact');
+      btn.disabled = true;
+      btn.innerText = "Creating Bank...";
+
+      const name = document.getElementById('input-contact-name').value.trim();
+      const role = document.getElementById('input-contact-role').value.trim();
+      const company = document.getElementById('input-contact-company').value.trim();
+
+      try {
+        const res = await fetch('/api/contacts', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, role, company })
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          throw new Error(data.detail || "Failed to create contact");
+        }
+
+        closeAddModal();
+        await fetchContacts();
+        if (data.contact && data.contact.id) {
+          selectContact(data.contact.id);
+        }
+      } catch (err) {
+        showAlert(err.message);
+      } finally {
+        btn.disabled = false;
+        btn.innerText = "Create Contact & Memory Bank";
+      }
+    }
+
+    // Select Contact
+    async function selectContact(contactId) {
+      selectedContactId = contactId;
+      selectedContact = contacts.find(c => c.id === contactId);
+      if (!selectedContact) return;
+
+      renderContactList();
+
+      emptyStateEl.classList.add('hidden');
+      contactViewEl.classList.remove('hidden');
+
+      // CRITICAL REQUIREMENT: Clear previous contact-specific answer, memories used, prep results
+      // "NEVER leave Rahul's answer visible while Priya is selected."
+      askInput.value = '';
+      askResultContainer.classList.add('hidden');
+      askAnswerText.textContent = '';
+      memoriesUsedList.innerHTML = '';
+
+      prepareResultContainer.classList.add('hidden');
+      prepareFactsList.innerHTML = '';
+      prepareSuggestionText.textContent = '';
+
+      aiRememberedContainer.classList.add('hidden');
+      aiRememberedList.innerHTML = '';
+      debriefInput.value = '';
+
+      // Update Profile Details
+      profileAvatar.textContent = (selectedContact.name || 'C').charAt(0).toUpperCase();
+      profileName.textContent = selectedContact.name;
+      profileSubtitle.textContent = [selectedContact.role, selectedContact.company].filter(Boolean).join(' • ') || 'No details specified';
+      profileBankBadge.textContent = selectedContact.bank_id;
+      memoryBankTag.textContent = selectedContact.bank_id;
+      askSectionTitle.textContent = `WHAT SHOULD I DISCUSS WITH ${selectedContact.name.toUpperCase()} TODAY?`;
+      askInput.placeholder = `What should I discuss with ${selectedContact.name} today? Or ask about commitments...`;
+
+      // Load Contact Memories
+      loadContactMemories(selectedContactId);
+
+      // CRITICAL REQUIREMENT: "When a contact profile is opened, automatically perform ONE Hindsight recall followed by ONE Groq call."
+      loadProactiveInsight(selectedContactId);
+    }
+
+    async function refreshCurrentContact() {
+      if (!selectedContactId) return;
+      loadContactMemories(selectedContactId);
+      loadProactiveInsight(selectedContactId);
+    }
+
+    // Proactive Preparation Insight
+    async function loadProactiveInsight(contactId) {
+      proactiveInsightContent.innerHTML = `<span class="text-slate-400 italic">Analyzing memory bank for upcoming interaction...</span>`;
+      
+      try {
+        const res = await fetch(`/api/contacts/${contactId}/proactive`, { method: 'POST' });
+        if (contactId !== selectedContactId) return; // Prevent race conditions when switching quickly
+
+        if (!res.ok) {
+          const err = await res.json();
+          proactiveInsightContent.innerHTML = `<span class="text-amber-700">${escapeHtml(err.detail || 'Unable to retrieve proactive insight.')}</span>`;
+          return;
+        }
+
+        const data = await res.json();
+        proactiveInsightContent.textContent = data.insight;
+      } catch (err) {
+        if (contactId === selectedContactId) {
+          proactiveInsightContent.innerHTML = `<span class="text-slate-500">There isn't enough history yet to provide a useful preparation insight.</span>`;
+        }
+      }
+    }
+
+    // Load Stored Memories from Hindsight
+    async function loadContactMemories(contactId) {
+      contactMemoryList.innerHTML = `<div class="text-xs text-slate-400 italic py-3 text-center">Loading memories from Hindsight...</div>`;
+      
+      try {
+        const res = await fetch(`/api/contacts/${contactId}/memories`);
+        if (contactId !== selectedContactId) return;
+
+        if (!res.ok) {
+          const err = await res.json();
+          contactMemoryList.innerHTML = `<div class="text-xs text-red-500 py-2">${escapeHtml(err.detail || 'Error loading memories.')}</div>`;
+          return;
+        }
+
+        const data = await res.json();
+        const memories = data.memories || [];
+        storedMemoriesCount.textContent = `${memories.length} ${memories.length === 1 ? 'memory' : 'memories'}`;
+
+        if (memories.length === 0) {
+          contactMemoryList.innerHTML = `
+            <div class="text-xs text-slate-400 italic py-4 text-center">
+              No memories stored for this contact yet. Debrief a meeting above to start remembering.
+            </div>
+          `;
+          return;
+        }
+
+        contactMemoryList.innerHTML = memories.map(m => {
+          let dateStr = '';
+          if (m.date) {
+            try {
+              dateStr = new Date(m.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+            } catch (e) {
+              dateStr = m.date;
+            }
+          }
+
+          return `
+            <div class="p-2.5 bg-slate-50 rounded-lg border border-slate-200/80 text-xs">
+              <div class="text-slate-800 leading-relaxed font-normal">${escapeHtml(m.text)}</div>
+              ${(dateStr || m.context) ? `
+                <div class="mt-1.5 flex items-center space-x-2 text-[10px] text-slate-400">
+                  ${dateStr ? `<span>${escapeHtml(dateStr)}</span>` : ''}
+                  ${(dateStr && m.context) ? `<span>&bull;</span>` : ''}
+                  ${m.context ? `<span class="bg-slate-200/60 text-slate-600 px-1.5 py-0.2 rounded font-mono">${escapeHtml(m.context)}</span>` : ''}
+                </div>
+              ` : ''}
+            </div>
+          `;
+        }).join('');
+      } catch (err) {
+        if (contactId === selectedContactId) {
+          contactMemoryList.innerHTML = `<div class="text-xs text-red-500 py-2">Failed to load memories from Hindsight.</div>`;
+        }
+      }
+    }
+
+    // Debrief Meeting
+    async function handleRememberMeeting() {
+      if (!selectedContactId) return;
+      const debriefText = debriefInput.value.trim();
+      if (!debriefText) {
+        showAlert("Please enter your meeting debrief text.");
+        return;
+      }
+
+      btnRememberMeeting.disabled = true;
+      btnRememberLabel.textContent = "Remembering...";
+      dismissAlert();
+
+      try {
+        const res = await fetch(`/api/contacts/${selectedContactId}/debrief`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ debrief: debriefText })
+        });
+        const data = await res.json();
+
+        if (!res.ok) {
+          throw new Error(data.detail || "Failed to process debrief");
+        }
+
+        // Show AI Remembered section
+        const facts = data.extracted_facts || [];
+        if (facts.length > 0) {
+          aiRememberedList.innerHTML = facts.map(f => `
+            <li class="flex items-start space-x-2">
+              <span class="text-emerald-500 font-bold shrink-0">&bull;</span>
+              <span>${escapeHtml(f)}</span>
+            </li>
+          `).join('');
+          aiRememberedContainer.classList.remove('hidden');
+        } else {
+          aiRememberedList.innerHTML = `<li class="text-slate-400 italic">No memory-worthy facts identified in this debrief.</li>`;
+          aiRememberedContainer.classList.remove('hidden');
+        }
+
+        // Clear debrief input
+        debriefInput.value = '';
+
+        // Refresh contact memories and proactive insight
+        await loadContactMemories(selectedContactId);
+        await loadProactiveInsight(selectedContactId);
+
+      } catch (err) {
+        showAlert(err.message);
+      } finally {
+        btnRememberMeeting.disabled = false;
+        btnRememberLabel.textContent = "Remember This Meeting";
+      }
+    }
+
+    // Ask Question
+    async function handleAskQuestion() {
+      if (!selectedContactId) return;
+      const question = askInput.value.trim();
+      if (!question) {
+        showAlert("Please enter a question to ask.");
+        return;
+      }
+
+      btnAsk.disabled = true;
+      btnAskLabel.textContent = "Thinking...";
+      dismissAlert();
+
+      try {
+        const res = await fetch(`/api/contacts/${selectedContactId}/ask`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ question })
+        });
+        const data = await res.json();
+
+        if (!res.ok) {
+          throw new Error(data.detail || "Failed to answer question");
+        }
+
+        askAnswerText.textContent = data.answer || "Not in memory.";
+        
+        const memories = data.memories_used || [];
+        if (memories.length === 0) {
+          memoriesUsedList.innerHTML = `<li class="text-slate-400 italic">None</li>`;
+        } else {
+          memoriesUsedList.innerHTML = memories.map(m => `
+            <li class="p-1.5 bg-white rounded border border-slate-200 text-slate-800 flex items-start space-x-1.5">
+              <span class="text-blue-500 font-bold">&bull;</span>
+              <span>${escapeHtml(m)}</span>
+            </li>
+          `).join('');
+        }
+
+        askResultContainer.classList.remove('hidden');
+      } catch (err) {
+        showAlert(err.message);
+      } finally {
+        btnAsk.disabled = false;
+        btnAskLabel.textContent = "Ask";
+      }
+    }
+
+    // Prepare for Next Meeting
+    async function handlePrepareNextMeeting() {
+      if (!selectedContactId) return;
+
+      btnPrepareMeeting.disabled = true;
+      btnPrepareLabel.textContent = "Preparing...";
+      dismissAlert();
+
+      try {
+        const res = await fetch(`/api/contacts/${selectedContactId}/prepare`, { method: 'POST' });
+        const data = await res.json();
+
+        if (!res.ok) {
+          throw new Error(data.detail || "Failed to generate meeting preparation");
+        }
+
+        const facts = data.remembered_facts || [];
+        if (facts.length === 0) {
+          prepareFactsList.innerHTML = `<li class="text-slate-400 italic">No remembered facts available.</li>`;
+        } else {
+          prepareFactsList.innerHTML = facts.map(f => `
+            <li class="flex items-start space-x-1.5 text-slate-700">
+              <span class="text-slate-400 font-bold">&bull;</span>
+              <span>${escapeHtml(f)}</span>
+            </li>
+          `).join('');
+        }
+
+        prepareSuggestionText.textContent = data.suggestion || "There isn't enough history yet to support a real suggestion.";
+        prepareResultContainer.classList.remove('hidden');
+      } catch (err) {
+        showAlert(err.message);
+      } finally {
+        btnPrepareMeeting.disabled = false;
+        btnPrepareLabel.textContent = "Prepare for Next Meeting";
+      }
+    }
+
+    // HTML escape utility
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    // Run on startup
+    window.addEventListener('DOMContentLoaded', init);
+  </script>
+
+</body>
+</html>

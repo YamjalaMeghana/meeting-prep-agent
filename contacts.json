@@ -1,0 +1,18 @@
+[
+  {
+    "id": "contact_1_1790692395057",
+    "name": "Rahul",
+    "role": "Account Manager",
+    "company": "Example Corp",
+    "bank_id": "contact-rahul-001",
+    "created_at": "2026-09-29T14:33:15.057Z"
+  },
+  {
+    "id": "contact_2_1790692481730",
+    "name": "Priya",
+    "role": "Engineering Director",
+    "company": "Tech Labs",
+    "bank_id": "contact-priya-001",
+    "created_at": "2026-09-29T14:34:41.730Z"
+  }
+]
