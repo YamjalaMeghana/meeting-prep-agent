@@ -1,57 +1,73 @@
 # 🤖 Meeting Prep Agent
 
-An AI-powered meeting assistant that helps you prepare for meetings by remembering important details from previous conversations.
+**Prepare better. Remember more.**
 
-Instead of starting every meeting from scratch, the agent keeps **contact-specific memories** such as previous discussions, commitments, concerns, and follow-ups, and uses them to help prepare for future meetings.
+Meeting Prep Agent is an AI-powered assistant that uses **long-term memory** to help you prepare for conversations and meetings.
 
-## ✨ What it does
+It remembers useful details from previous interactions with each contact, allowing you to quickly revisit discussions, commitments, follow-ups, and topics that need attention.
 
-* 👤 Create and manage contacts
-* 📝 Save notes from previous meetings
-* 🧠 Store important meeting information as long-term memory
-* 🔍 Ask questions about previous conversations
-* 📋 Generate preparation for upcoming meetings
-* 💡 Get relevant talking points, follow-ups, and things to discuss
-* 🔐 Keep memories separated for each contact
+## 🌐 Live Demo
 
-## 🚀 How it works
+**[Launch Meeting Prep Agent](https://meeting-prep-agent-2.ai.studio)**
+
+## ✨ Key Features
+
+* 👥 **Contact Management** — Create and manage individual contacts
+* 📝 **Meeting Notes** — Record important information from conversations
+* 🧠 **Long-Term Memory** — Retain useful details for future meetings
+* 💬 **Ask Questions** — Retrieve information from previous discussions
+* 📋 **Meeting Preparation** — Generate relevant preparation for upcoming meetings
+* 💡 **Talking Points** — Identify follow-ups and topics worth discussing
+* 🔒 **Contact-Specific Memory** — Keep information associated with the correct contact
+
+## 🔄 Workflow
 
 ```text
-Previous Meeting
-       ↓
-Meeting Notes
-       ↓
-AI extracts important information
-       ↓
-Contact-specific Memory
-       ↓
-Ask questions / Prepare for next meeting
-       ↓
-Personalized Meeting Brief
+Meeting / Conversation
+        ↓
+Add Notes & Information
+        ↓
+Store Relevant Memories
+        ↓
+Retrieve Memories When Needed
+        ↓
+Prepare for the Next Meeting
+        ↓
+Context-Aware Responses
 ```
 
-## 🛠️ Technologies Used
+## 🧠 Example
 
-* 🤖 LLM
-* ⚡ Groq
-* 🧠 Hindsight Cloud
-* 🌐 Google AI Studio
-* 💻 JavaScript / Web technologies
+Imagine a contact named **Siri**.
 
-## 💡 Example
+You record a meeting where Siri mentions:
 
-Suppose you have a contact named **Siri**.
+> The team is planning a product launch next month and will share updated requirements by Friday.
 
-After a meeting, you save:
+Before your next meeting, you can ask:
 
-> Siri mentioned that the team is planning a product launch next month. She will share the updated requirements by Friday. The API integration and project timeline still need to be discussed.
+**"What should I discuss with Siri?"**
 
-Before the next meeting, you can ask:
+The agent can use the stored information to bring up the product launch, requirements, and other relevant follow-ups.
 
-> **“What should I discuss with Siri?”**
+## 🛠️ Tech Stack
 
-The agent uses the stored information to generate relevant preparation instead of giving a generic response.
+| Technology          | Purpose                 |
+| ------------------- | ----------------------- |
+| 🌐 Google AI Studio | Application development |
+| ⚡ Groq              | LLM inference           |
+| 🧠 Hindsight Cloud  | Long-term memory        |
+| 💻 JavaScript       | Application logic       |
+| 🌐 Web Technologies | User interface          |
 
-## 🎯 Why I built this
+## 🎯 Project Goal
 
-I wanted to explore how **LLMs and persistent memory** can be combined to build an assistant that becomes more useful over time by remembering important details from previous meetings.
+This project explores how **AI agents, LLMs, and persistent memory** can work together to create assistants that become more useful across repeated interactions.
+
+## 🔐 Security
+
+Sensitive credentials such as API keys should be stored securely using environment variables and must not be committed to the repository.
+
+---
+
+⭐ **Built to explore the possibilities of AI agents with persistent memory.**
